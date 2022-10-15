@@ -82,6 +82,8 @@ void die(const char *, ...);
 void redraw(void);
 void draw(void);
 
+void termhistout(const Arg *);
+void lastcmdout(const Arg *);
 void printscreen(const Arg *);
 void printsel(const Arg *);
 void sendbreak(const Arg *);

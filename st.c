@@ -46,6 +46,7 @@
 #define TSCREEN term.screen[IS_SET(MODE_ALTSCREEN)]
 #define TLINEOFFSET(y) (((y) + TSCREEN.cur - TSCREEN.off + TSCREEN.size) % TSCREEN.size)
 #define TLINE(y) (TSCREEN.buffer[TLINEOFFSET(y)])
+#define HLINE(y) (TSCREEN.buffer[y])
 
 enum term_mode {
 	MODE_WRAP        = 1 << 0,
@@ -132,6 +133,7 @@ typedef struct {
 	TCursor c;    /* cursor */
 	int ocx;      /* old cursor col */
 	int ocy;      /* old cursor row */
+	int ocy_prev; /* old cursor row offset */
 	int top;      /* top    scroll limit */
 	int bot;      /* bottom scroll limit */
 	int mode;     /* terminal mode flags */
@@ -429,6 +431,20 @@ tlinelen(int y)
 		return i;
 
 	while (i > 0 && line[i - 1].u == ' ')
+		--i;
+
+	return i;
+}
+
+int
+hlinehistlen(int y)
+{
+	int i = term.col;
+
+	if (HLINE(y)[i - 1].mode & ATTR_WRAP)
+		return i;
+
+	while (i > 0 && HLINE(y)[i - 1].u == ' ')
 		--i;
 
 	return i;
@@ -734,8 +750,14 @@ sigchld(int a)
 	if ((p = waitpid(pid, &stat, WNOHANG)) < 0)
 		die("waiting for pid %hd failed: %s\n", pid, strerror(errno));
 
-	if (pid != p)
+	if (pid != p) {
+		if (p == 0 && wait(&stat) < 0)
+			die("wait: %s\n", strerror(errno));
+
+		/* reinstall sigchld handler */
+		signal(SIGCHLD, sigchld);
 		return;
+	}
 
 	if (WIFEXITED(stat) && WEXITSTATUS(stat))
 		die("child exited with status %d\n", WEXITSTATUS(stat));
@@ -860,6 +882,10 @@ void
 ttywrite(const char *s, size_t n, int may_echo)
 {
 	const char *next;
+
+	if (*s == 13) {
+		term.ocy_prev = term.ocy + TSCREEN.cur;
+	}
 
 	if (may_echo && IS_SET(MODE_ECHO))
 		twrite(s, n, 1);
@@ -2072,6 +2098,115 @@ strparse(void)
 			return;
 		*p++ = '\0';
 	}
+}
+
+
+void
+termhistout(const Arg *arg)
+{
+	int to[2];
+	char buf[UTF_SIZ];
+	void (*oldsigpipe)(int);
+	Glyph *bp, *end;
+	int lastpos, n, newline;
+
+	if (pipe(to) == -1)
+		return;
+
+	switch (fork()) {
+	case -1:
+		close(to[0]);
+		close(to[1]);
+		return;
+	case 0:
+		dup2(to[0], STDIN_FILENO);
+		close(to[0]);
+		close(to[1]);
+		execvp(((char **)arg->v)[0], (char **)arg->v);
+		fprintf(stderr, "st: execvp %s\n", ((char **)arg->v)[0]);
+		perror("failed");
+		exit(0);
+	}
+	close(to[0]);
+	/* ignore sigpipe for now, in case child exists early */
+	oldsigpipe = signal(SIGPIPE, SIG_IGN);
+
+	// Captures the whole history
+	newline = 0;
+	for (int i = 0; i < (term.ocy + TSCREEN.cur) + 1; i++) {
+		bp = HLINE(i); 
+		lastpos = MIN(hlinehistlen(i) + 1, term.col) - 1;
+		if (lastpos < 0)
+			break;
+		end = &bp[lastpos];
+		for (; bp < end; ++bp)
+			if (xwrite(to[1], buf, utf8encode(bp->u, buf)) < 0)
+				break;
+		if ((newline = HLINE(i)[lastpos].mode & ATTR_WRAP))
+			continue;
+		if (xwrite(to[1], "\n", 1) < 0)
+			break;
+		newline = 0;
+	}
+	if (newline)
+		(void)xwrite(to[1], "\n", 1);
+	close(to[1]);
+	/* restore */
+	signal(SIGPIPE, oldsigpipe);
+}
+
+void
+lastcmdout(const Arg *arg)
+{
+	int to[2];
+	char buf[UTF_SIZ];
+	void (*oldsigpipe)(int);
+	Glyph *bp, *end;
+	int lastpos, n, newline;
+
+	if (pipe(to) == -1)
+		return;
+
+	switch (fork()) {
+	case -1:
+		close(to[0]);
+		close(to[1]);
+		return;
+	case 0:
+		dup2(to[0], STDIN_FILENO);
+		close(to[0]);
+		close(to[1]);
+		execvp(((char **)arg->v)[0], (char **)arg->v);
+		fprintf(stderr, "st: execvp %s\n", ((char **)arg->v)[0]);
+		perror("failed");
+		exit(0);
+	}
+	close(to[0]);
+	/* ignore sigpipe for now, in case child exists early */
+	oldsigpipe = signal(SIGPIPE, SIG_IGN);
+
+	// Captures just the previous command
+	newline = 0;
+	for (int i = term.ocy_prev; i < (term.ocy + TSCREEN.cur)  + 1; i++) {
+		bp = HLINE(i); 
+		lastpos = MIN(hlinehistlen(i) + 1, term.col) - 1;
+		if (lastpos < 0)
+			break;
+		end = &bp[lastpos];
+		for (; bp < end; ++bp)
+			if (xwrite(to[1], buf, utf8encode(bp->u, buf)) < 0)
+				break;
+		if ((newline = HLINE(i)[lastpos].mode & ATTR_WRAP))
+			continue;
+		if (xwrite(to[1], "\n", 1) < 0)
+			break;
+		newline = 0;
+	}
+	if (newline)
+		(void)xwrite(to[1], "\n", 1);
+	close(to[1]);
+	/* restore */
+	signal(SIGPIPE, oldsigpipe);
 }
 
 void

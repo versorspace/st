@@ -187,6 +187,8 @@ static MouseShortcut mshortcuts[] = {
 #define MODKEY Mod1Mask
 #define TERMMOD (ControlMask|ShiftMask)
 
+static char *termclip[] = { "xclip", "-i", "-selection", "clipboard" , NULL };
+
 static Shortcut shortcuts[] = {
 	/* mask                 keysym          function        argument */
 	{ XK_ANY_MOD,           XK_Break,       sendbreak,      {.i =  0} },
@@ -205,6 +207,8 @@ static Shortcut shortcuts[] = {
 	{ ShiftMask,            XK_Page_Down,   kscrolldown,    {.i = -1} },
 	{ ControlMask,		XK_k,		kscrollup,      {.i =  1} },
 	{ ControlMask,		XK_j,		kscrolldown,    {.i =  1} },
+	{ Mod4Mask,             XK_c,           termhistout,   {.v = termclip} },
+	{ Mod4Mask,             XK_o,           lastcmdout,    {.v = termclip} },
 };
 
 /*
