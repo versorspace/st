@@ -2187,7 +2187,7 @@ lastcmdout(const Arg *arg)
 
 	// Captures just the previous command
 	newline = 0;
-	for (int i = term.ocy_prev; i < (term.ocy + TSCREEN.cur)  + 1; i++) {
+	for (int i = term.ocy_prev; i < (term.ocy + TSCREEN.cur - 1); i++) {
 		bp = HLINE(i); 
 		lastpos = MIN(hlinehistlen(i) + 1, term.col) - 1;
 		if (lastpos < 0)
