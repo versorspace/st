@@ -207,8 +207,8 @@ static Shortcut shortcuts[] = {
 	{ ShiftMask,            XK_Page_Down,   kscrolldown,    {.i = -1} },
 	{ ControlMask,		XK_k,		kscrollup,      {.i =  1} },
 	{ ControlMask,		XK_j,		kscrolldown,    {.i =  1} },
-	{ Mod4Mask,             XK_c,           termhistout,   {.v = termclip} },
-	{ Mod4Mask,             XK_o,           lastcmdout,    {.v = termclip} },
+	{ Mod4Mask,             XK_o,           xclippipe,      {.i =  0} },
+	{ Mod4Mask,             XK_c,           xclippipe,      {.i =  1} },
 };
 
 /*

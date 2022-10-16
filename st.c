@@ -2102,13 +2102,15 @@ strparse(void)
 
 
 void
-termhistout(const Arg *arg)
+xclippipe(const Arg *arg)
 {
 	int to[2];
 	char buf[UTF_SIZ];
 	void (*oldsigpipe)(int);
 	Glyph *bp, *end;
 	int lastpos, n, newline;
+	int start, stop;
+	char* argument_list[] = {"xclip", "-i", "-selection", "clipboard", NULL};
 
 	if (pipe(to) == -1)
 		return;
@@ -2122,6 +2124,7 @@ termhistout(const Arg *arg)
 		dup2(to[0], STDIN_FILENO);
 		close(to[0]);
 		close(to[1]);
+		execvp("xclip", argument_list);
 		execvp(((char **)arg->v)[0], (char **)arg->v);
 		fprintf(stderr, "st: execvp %s\n", ((char **)arg->v)[0]);
 		perror("failed");
@@ -2131,72 +2134,33 @@ termhistout(const Arg *arg)
 	/* ignore sigpipe for now, in case child exists early */
 	oldsigpipe = signal(SIGPIPE, SIG_IGN);
 
-	// Captures the whole history
-	newline = 0;
-	for (int i = 0; i < (term.ocy + TSCREEN.cur) + 1; i++) {
-		bp = HLINE(i); 
-		lastpos = MIN(hlinehistlen(i) + 1, term.col) - 1;
-		if (lastpos < 0)
-			break;
-		end = &bp[lastpos];
-		for (; bp < end; ++bp)
-			if (xwrite(to[1], buf, utf8encode(bp->u, buf)) < 0)
-				break;
-		if ((newline = HLINE(i)[lastpos].mode & ATTR_WRAP))
-			continue;
-		if (xwrite(to[1], "\n", 1) < 0)
-			break;
-		newline = 0;
-	}
-	if (newline)
-		(void)xwrite(to[1], "\n", 1);
-	close(to[1]);
-	/* restore */
-	signal(SIGPIPE, oldsigpipe);
-}
-
-void
-lastcmdout(const Arg *arg)
-{
-	int to[2];
-	char buf[UTF_SIZ];
-	void (*oldsigpipe)(int);
-	Glyph *bp, *end;
-	int lastpos, n, newline;
-
-	if (pipe(to) == -1)
-		return;
-
-	switch (fork()) {
-	case -1:
-		close(to[0]);
-		close(to[1]);
-		return;
+	int opt = arg->i;
+	
+	switch (opt) {
 	case 0:
-		dup2(to[0], STDIN_FILENO);
-		close(to[0]);
-		close(to[1]);
-		execvp(((char **)arg->v)[0], (char **)arg->v);
-		fprintf(stderr, "st: execvp %s\n", ((char **)arg->v)[0]);
-		perror("failed");
-		exit(0);
+		start = term.ocy_prev;
+		stop = term.ocy + TSCREEN.cur - 1;
+		break;
+	case 1:
+		start = 0;
+		stop = term.ocy + TSCREEN.cur - 1;
+		break;
+	default:
+		return;
 	}
-	close(to[0]);
-	/* ignore sigpipe for now, in case child exists early */
-	oldsigpipe = signal(SIGPIPE, SIG_IGN);
 
 	// Captures just the previous command
 	newline = 0;
-	for (int i = term.ocy_prev; i < (term.ocy + TSCREEN.cur - 1); i++) {
-		bp = HLINE(i); 
-		lastpos = MIN(hlinehistlen(i) + 1, term.col) - 1;
+	for (; start < stop; start++) {
+		bp = HLINE(start); 
+		lastpos = MIN(hlinehistlen(start) + 1, term.col) - 1;
 		if (lastpos < 0)
 			break;
 		end = &bp[lastpos];
 		for (; bp < end; ++bp)
 			if (xwrite(to[1], buf, utf8encode(bp->u, buf)) < 0)
 				break;
-		if ((newline = HLINE(i)[lastpos].mode & ATTR_WRAP))
+		if ((newline = HLINE(start)[lastpos].mode & ATTR_WRAP))
 			continue;
 		if (xwrite(to[1], "\n", 1) < 0)
 			break;
