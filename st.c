@@ -2128,7 +2128,7 @@ xclippipe(const Arg *arg)
 		close(to[0]);
 		close(to[1]);
 		execvp("xclip", argument_list);
-		fprintf(stderr, "st: execvp %s\n", "xclip");
+		fprintf(stderr, "st: execvp %s\n", argument_list[0]);
 		perror("failed");
 		exit(0);
 	}
