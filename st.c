@@ -2140,8 +2140,10 @@ xclippipe(const Arg *arg)
 	
 	switch (opt) {
 	case 0:
-		start = term.ocy_prev;
-		stop = term.ocy + TSCREEN.cur - 1;
+		start = term.ocy_prev - 2;
+		start = start >= 0 ? start : 0;
+		stop = term.ocy + TSCREEN.cur - 2;
+		stop = stop >= 0 ? stop : 0;
 		break;
 	case 1:
 		start = 0;
