@@ -2118,6 +2118,10 @@ xclippipe(const Arg *arg)
 	if (pipe(to) == -1)
 		return;
 
+	// xsetsel("Hello there");
+	// xsetsel("Over here");
+	// xclipcopy();
+
 	switch (fork()) {
 	case -1:
 		close(to[0]);
