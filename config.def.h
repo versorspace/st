@@ -224,8 +224,8 @@ static Shortcut shortcuts[] = {
 	{ ControlMask,		XK_j,		kscrolldown,    {.i =  1} },
 	{ TERMMOD,              XK_K,           kscrollup,      {.i = -1} },
 	{ TERMMOD,              XK_J,           kscrolldown,    {.i = -1} },
-	{ Mod4Mask,             XK_o,           xclippipe,      {.i =  0} },
-	{ Mod4Mask,             XK_c,           xclippipe,      {.i =  1} },
+	{ MODKEY,             	XK_o,           xclippipe,      {.i =  0} },
+	{ MODKEY,             	XK_c,           xclippipe,      {.i =  1} },
 
 };
 
