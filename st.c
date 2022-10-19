@@ -2179,6 +2179,7 @@ xclippipe(const Arg *arg)
 	close(to[1]);
 	/* restore */
 	signal(SIGPIPE, oldsigpipe);
+	ttywriteraw("xclip -o -selection clipboard | less\n", 40);
 }
 
 void
