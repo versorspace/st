@@ -2117,6 +2117,9 @@ externalpipe(const Arg *arg)
 	// check commit 40fdce43d8c64f18698da820bfe3d54f271d59d2 switch arg
 	char* argument_list[] = {"xclip", "-i", "-selection", "clipboard", NULL};
 
+	if (tisaltscr())
+		return;
+
 	if (pipe(to) == -1)
 		return;
 
