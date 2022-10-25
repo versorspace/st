@@ -133,7 +133,6 @@ typedef struct {
 	TCursor c;    /* cursor */
 	int ocx;      /* old cursor col */
 	int ocy;      /* old cursor row */
-	int ocy_prev; /* old cursor row offset */
 	int top;      /* top    scroll limit */
 	int bot;      /* bottom scroll limit */
 	int mode;     /* terminal mode flags */
@@ -882,10 +881,6 @@ void
 ttywrite(const char *s, size_t n, int may_echo)
 {
 	const char *next;
-
-	if (*s == 13) {
-		term.ocy_prev = term.ocy + TSCREEN.cur;
-	}
 
 	if (may_echo && IS_SET(MODE_ECHO))
 		twrite(s, n, 1);
@@ -2105,7 +2100,7 @@ strparse(void)
 
 
 void
-xclippipe(const Arg *arg)
+externalpipe(const Arg *arg)
 {
 	int to[2];
 	char buf[UTF_SIZ];
@@ -2113,14 +2108,12 @@ xclippipe(const Arg *arg)
 	Glyph *bp, *end;
 	int lastpos, n, newline;
 	int start, stop;
+	// feature: utilize arg to pick a different argument_list
+	// check commit 40fdce43d8c64f18698da820bfe3d54f271d59d2 switch arg
 	char* argument_list[] = {"xclip", "-i", "-selection", "clipboard", NULL};
 
 	if (pipe(to) == -1)
 		return;
-
-	// xsetsel("Hello there");
-	// xsetsel("Over here");
-	// xclipcopy();
 
 	switch (fork()) {
 	case -1:
@@ -2131,7 +2124,7 @@ xclippipe(const Arg *arg)
 		dup2(to[0], STDIN_FILENO);
 		close(to[0]);
 		close(to[1]);
-		execvp("xclip", argument_list);
+		execvp(argument_list[0], argument_list);
 		fprintf(stderr, "st: execvp %s\n", argument_list[0]);
 		perror("failed");
 		exit(0);
@@ -2142,20 +2135,10 @@ xclippipe(const Arg *arg)
 
 	int opt = arg->i;
 	
-	switch (opt) {
-	case 0:
-		start = term.ocy_prev - 2;
-		start = start >= 0 ? start : 0;
-		stop = term.ocy + TSCREEN.cur - 2;
-		stop = stop >= 0 ? stop : 0;
-		break;
-	case 1:
-		start = 0;
-		stop = term.ocy + TSCREEN.cur - 1;
-		break;
-	default:
-		return;
-	}
+	// start from the very top of the scrollback buffer
+	// use reset to clear the scrollback buffer
+	start = 0;
+	stop = term.ocy + TSCREEN.cur - 1;
 
 	// Captures just the previous command
 	newline = 0;
@@ -2179,9 +2162,6 @@ xclippipe(const Arg *arg)
 	close(to[1]);
 	/* restore */
 	signal(SIGPIPE, oldsigpipe);
-	// ttywriteraw("xclip -o -selection clipboard | less\n", 38);
-	if (write(cmdfd, "xclip -o -selection clipboard | less\n", 38) < 0)
-		return;
 }
 
 void

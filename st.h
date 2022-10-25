@@ -89,7 +89,7 @@ void die(const char *, ...);
 void redraw(void);
 void draw(void);
 
-void xclippipe(const Arg *);
+void externalpipe(const Arg *);
 void lastcmdout(const Arg *);
 void printscreen(const Arg *);
 void printsel(const Arg *);
