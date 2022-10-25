@@ -2148,7 +2148,7 @@ externalpipe(const Arg *arg)
 		if (lastpos < 0)
 			break;
 		end = &bp[lastpos];
-		for (; bp < end; ++bp)
+		for (; bp <= end; ++bp)
 			if (xwrite(to[1], buf, utf8encode(bp->u, buf)) < 0)
 				break;
 		if ((newline = HLINE(start)[lastpos].mode & ATTR_WRAP))
