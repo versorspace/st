@@ -5,9 +5,12 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "MesloLGS NF:pixelsize=14:antialias=true:autohint=true";
+static char *font = "Ubuntu Mono:pixelsize=16:antialias=true:autohint=true";
 /* Spare fonts */
-static char *font2[] = { "NotoColorEmoji:pixelsize=12:antialias=true:autohint=true" };
+static char *font2[] = {
+	"Noto Color Emoji:pixelsize=12:antialias=true:autohint=true",
+	"MesloLGS NF:pixelsize=15:antialias=true:autohint=true",
+};
 
 static int borderpx = 2;
 
