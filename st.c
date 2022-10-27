@@ -2115,10 +2115,24 @@ externalpipe(const Arg *arg)
 	int start, stop;
 	// feature: utilize arg to pick a different argument_list
 	// check commit 40fdce43d8c64f18698da820bfe3d54f271d59d2 switch arg
-	char* argument_list[] = {"xclip", "-i", "-selection", "clipboard", NULL};
+	char *termwordclip[] = {"termwordclip.sh", NULL};
+	char *fullhistclip[] = {"xclip", "-i", "-selection", "clipboard", NULL};
 
-	if (tisaltscr())
+	switch (arg->i) {
+	case 0:
+		start = term.top;
+		stop = term.ocy + TSCREEN.cur - 1;
+		break;
+	case 1:
+		start = 0;
+		stop = term.ocy + TSCREEN.cur - 1;
+		if (tisaltscr())
+			return;
+		break;
+	default:
 		return;
+	}
+
 
 	if (pipe(to) == -1)
 		return;
@@ -2132,8 +2146,16 @@ externalpipe(const Arg *arg)
 		dup2(to[0], STDIN_FILENO);
 		close(to[0]);
 		close(to[1]);
-		execvp(argument_list[0], argument_list);
-		fprintf(stderr, "st: execvp %s\n", argument_list[0]);
+		switch (arg->i) {
+		case 0:
+			execvp(termwordclip[0], termwordclip);
+			fprintf(stderr, "st: execvp %s\n", termwordclip[0]);
+			break;
+		case 1:
+			execvp(fullhistclip[0], fullhistclip);
+			fprintf(stderr, "st: execvp %s\n", fullhistclip[0]);
+			break;
+		}
 		perror("failed");
 		exit(0);
 	}
