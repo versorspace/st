@@ -2120,8 +2120,10 @@ externalpipe(const Arg *arg)
 
 	switch (arg->i) {
 	case 0:
-		start = term.top;
+		start = TLINEOFFSET(0);
 		stop = term.ocy + TSCREEN.cur - 1;
+		printf("TLINEOFFSET(0): %d\n", start);
+		printf("temp.ocy + TSCREEN.cur -1: %d\n", stop);
 		break;
 	case 1:
 		start = 0;
@@ -2164,11 +2166,6 @@ externalpipe(const Arg *arg)
 	oldsigpipe = signal(SIGPIPE, SIG_IGN);
 
 	int opt = arg->i;
-	
-	// start from the very top of the scrollback buffer
-	// use reset to clear the scrollback buffer
-	start = 0;
-	stop = term.ocy + TSCREEN.cur - 1;
 
 	// Captures just the previous command
 	newline = 0;
