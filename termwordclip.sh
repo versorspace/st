@@ -1,3 +1,5 @@
 #!/run/current-system/sw/bin/bash
 
-tr ' ' '\n' | grep -v '^$' | dmenu | tr -d '\n' | xclip -i
+tee /tmp/termout | tr ' ' '\n' | sed '/^ *$/d' >> /tmp/termout
+cat /tmp/termout | dmenu | tr -d '\n' | xclip -i
+
