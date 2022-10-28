@@ -244,7 +244,7 @@ static Shortcut shortcuts[] = {
 	{ TERMMOD,              XK_J,           kscrolldown,    {.i = -1} },
 	{ MODKEY,             	XK_o,           externalpipe,      {.i =  0} },
 	{ MODKEY,             	XK_c,           externalpipe,      {.i =  1} },
-
+	{ TERMMOD,              XK_Return,      newterm,        {.i =  0} },
 };
 
 /*

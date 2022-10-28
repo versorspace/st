@@ -103,6 +103,7 @@ void printsel(const Arg *);
 void sendbreak(const Arg *);
 void toggleprinter(const Arg *);
 
+void newterm(const Arg *);
 int tattrset(int);
 int tisaltscr(void);
 void tnew(int, int);

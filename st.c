@@ -167,6 +167,7 @@ typedef struct {
 } STREscape;
 
 static void execsh(char *, char **);
+static char *getcwd_by_pid(pid_t pid);
 static void stty(char **);
 static void sigchld(int);
 static void ttywriteraw(const char *, size_t);
@@ -242,6 +243,7 @@ static STREscape strescseq;
 static int iofd = 1;
 static int cmdfd;
 static pid_t pid;
+static int extpipeactive = 0;
 
 static const uchar utfbyte[UTF_SIZ + 1] = {0x80,    0, 0xC0, 0xE0, 0xF0};
 static const uchar utfmask[UTF_SIZ + 1] = {0xC0, 0x80, 0xE0, 0xF0, 0xF8};
@@ -294,6 +296,38 @@ xstrdup(const char *s)
 		die("strdup: %s\n", strerror(errno));
 
 	return p;
+}
+
+
+void
+newterm(const Arg* a)
+{
+	int res;
+	switch (fork()) {
+	case -1:
+		die("fork failed: %s\n", strerror(errno));
+		break;
+	case 0:
+		switch (fork()) {
+		case -1:
+			die("fork failed: %s\n", strerror(errno));
+			break;
+		case 0:
+			res = chdir(getcwd_by_pid(pid));
+			execlp("st", "./st", NULL);
+			break;
+		default:
+			exit(0);
+		}
+	default:
+		wait(NULL);
+	}
+}
+
+static char *getcwd_by_pid(pid_t pid) {
+	char buf[32];
+	snprintf(buf, sizeof buf, "/proc/%d/cwd", pid);
+	return realpath(buf, NULL);
 }
 
 size_t
@@ -746,15 +780,19 @@ sigchld(int a)
 	int stat;
 	pid_t p;
 
-	if ((p = waitpid(pid, &stat, WNOHANG)) < 0)
+	if ((p = waitpid((extpipeactive ? -1 : pid), &stat, WNOHANG)) < 0)
 		die("waiting for pid %hd failed: %s\n", pid, strerror(errno));
 
 	if (pid != p) {
+		if (!extpipeactive)
+			return;
+
 		if (p == 0 && wait(&stat) < 0)
 			die("wait: %s\n", strerror(errno));
 
 		/* reinstall sigchld handler */
 		signal(SIGCHLD, sigchld);
+		extpipeactive = 0;
 		return;
 	}
 
@@ -2192,6 +2230,7 @@ externalpipe(const Arg *arg)
 	close(to[1]);
 	/* restore */
 	signal(SIGPIPE, oldsigpipe);
+	extpipeactive = 1;
 }
 
 void
