@@ -2113,17 +2113,20 @@ externalpipe(const Arg *arg)
 	Glyph *bp, *end;
 	int lastpos, n, newline;
 	int start, stop;
-	// feature: utilize arg to pick a different argument_list
-	// check commit 40fdce43d8c64f18698da820bfe3d54f271d59d2 switch arg
-	char *termwordclip[] = {"termwordclip.sh", NULL};
+	char *termwordclip[] = {"/home/vector/st/termwordclip.sh", NULL};
 	char *fullhistclip[] = {"xclip", "-i", "-selection", "clipboard", NULL};
 
 	switch (arg->i) {
 	case 0:
-		start = TLINEOFFSET(0);
-		stop = term.ocy + TSCREEN.cur - 1;
-		printf("TLINEOFFSET(0): %d\n", start);
-		printf("temp.ocy + TSCREEN.cur -1: %d\n", stop);
+		if IS_SET(MODE_ALTSCREEN) {
+			start = term.top;
+			stop = term.row;
+		} else {
+			start = TSCREEN.cur + term.top;
+			stop = start + term.row;
+		}
+		printf("start: %d\n", start);
+		printf("stop: %d\n", stop);
 		break;
 	case 1:
 		start = 0;
