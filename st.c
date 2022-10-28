@@ -2113,7 +2113,7 @@ externalpipe(const Arg *arg)
 	Glyph *bp, *end;
 	int lastpos, n, newline;
 	int start, stop;
-	char *termwordclip[] = {"/home/vector/st/termwordclip.sh", NULL};
+	char *termwordclip[] = {"termwordclip.sh", NULL};
 	char *fullhistclip[] = {"xclip", "-i", "-selection", "clipboard", NULL};
 
 	switch (arg->i) {
