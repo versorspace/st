@@ -5,11 +5,11 @@
  *
  * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
  */
-static char *font = "Ubuntu Mono:pixelsize=16:antialias=true:autohint=true";
+static char *font = "Ubuntu Mono:pixelsize=14:antialias=true:autohint=true";
 /* Spare fonts */
 static char *font2[] = {
-	"Noto Color Emoji:pixelsize=14:antialias=true:autohint=true",
-	"MesloLGS NF:pixelsize=14:antialias=true:autohint=true",
+	"Noto Color Emoji:pixelsize=12:antialias=true:autohint=true",
+	"MesloLGS NF:pixelsize=12:antialias=true:autohint=true",
 };
 
 static int borderpx = 2;
@@ -229,6 +229,7 @@ static Shortcut shortcuts[] = {
 	{ TERMMOD,              XK_Home,        zoomreset,      {.f =  0} },
 	{ TERMMOD,              XK_C,           clipcopy,       {.i =  0} },
 	{ TERMMOD,              XK_V,           clippaste,      {.i =  0} },
+	{ ControlMask,          XK_backslash,   clippaste,      {.i =  0} },
 	{ TERMMOD,              XK_Y,           selpaste,       {.i =  0} },
 	{ ShiftMask,            XK_Insert,      selpaste,       {.i =  0} },
 	{ ControlMask,          XK_bracketright,selpaste,       {.i =  0} },
