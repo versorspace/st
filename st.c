@@ -313,8 +313,7 @@ newterm(const Arg* a)
 			die("fork failed: %s\n", strerror(errno));
 			break;
 		case 0:
-			res = chdir(getcwd_by_pid(pid));
-			execlp("st", "./st", NULL);
+			execlp("tabbed", "tabbed", "-c", "st", "-d", getcwd_by_pid(pid), "-w", NULL);
 			break;
 		default:
 			exit(0);
