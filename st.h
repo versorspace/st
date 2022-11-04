@@ -85,6 +85,8 @@ typedef union {
 	const char *s;
 } Arg;
 
+void autocomplete (const Arg *);
+
 typedef struct {
 	uint b;
 	uint mask;
