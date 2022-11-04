@@ -3,7 +3,7 @@ Uses st 0.9: https://dl.suckless.org/st/st-0.9.tar.gz
 
 ## Features/Patches:
 1. scrollback ring buffer
-2. autocomplete
+2. autocomplete: https://gitlab.com/GasparVardanyan/st-autocomplete/-/tree/master/st-autocomplete
 3. alpha
 4. newterm (opened in tabbed)
 5. external pipe
