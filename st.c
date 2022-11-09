@@ -314,7 +314,8 @@ newterm(const Arg* a)
 			die("fork failed: %s\n", strerror(errno));
 			break;
 		case 0:
-			execlp("tabbed", "tabbed", "-c", "st", "-d", getcwd_by_pid(pid), "-w", NULL);
+			// execlp("tabbed", "tabbed", "-c", "st", "-d", getcwd_by_pid(pid), "-w", NULL);
+			execlp("st", "st", "-d", getcwd_by_pid(pid), NULL);
 			break;
 		default:
 			exit(0);
