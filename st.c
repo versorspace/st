@@ -47,6 +47,7 @@
 #define TSCREEN term.screen[IS_SET(MODE_ALTSCREEN)]
 #define TLINEOFFSET(y) (((y) + TSCREEN.cur - TSCREEN.off + TSCREEN.size) % TSCREEN.size)
 #define TLINE(y) (TSCREEN.buffer[TLINEOFFSET(y)])
+// HLINE(y) = term.screen[0].buffer[y]
 #define HLINE(y) (TSCREEN.buffer[y])
 
 enum term_mode {
@@ -2209,9 +2210,9 @@ externalpipe(const Arg *arg)
 
 	int opt = arg->i;
 
-	// Captures just the previous command
 	newline = 0;
 	for (; start < stop; start++) {
+		// remember that the type of bp is glyph
 		bp = HLINE(start); 
 		lastpos = MIN(hlinehistlen(start) + 1, term.col) - 1;
 		if (lastpos < 0)
@@ -2909,7 +2910,10 @@ void autocomplete (const Arg * arg)
 	static FILE * acmpl_exec = NULL;
 	static int acmpl_status;
 
-	static const char * stbuffile;
+	// static const char * stbuffile;
+	char tmpfname[] = "/tmp/termoutXXXXXX";
+	int tmpfd;
+
 	static char target [1000];		// ACMPL_ISSUE: why 1000? dynamically allocate char array of size term.col
 	static size_t targetlen;
 
@@ -2931,7 +2935,8 @@ void autocomplete (const Arg * arg)
 		{
 			active = 0;
 			pclose (acmpl_exec);
-			remove (stbuffile);
+			close(tmpfd);
+			remove(tmpfname);
 
 			if (complen_prev)
 			{
@@ -2954,7 +2959,8 @@ void autocomplete (const Arg * arg)
 		{
 			active = 0;
 			pclose (acmpl_exec);
-			remove (stbuffile);
+			remove(tmpfname);
+			close(tmpfd);
 
 			if (complen_prev)
 			{
@@ -2992,50 +2998,76 @@ void autocomplete (const Arg * arg)
 		cx = term.c.x;
 		cy = term.c.y;
 
-//     Write st buffer to a temp file
+		//     Write st buffer to a temp file
 
-		stbuffile = tmpnam (NULL);		// ACMPL_ISSUE: check for return value ...
+		// stbuffile = tmpnam (NULL);		// ACMPL_ISSUE: check for return value ...
 										// ACMPL_ISSUE: use coprocesses instead of temp files
 
-		FILE * stbuf = fopen (stbuffile, "w"); // ACMPL_ISSUE: check for opening error ...
-		char * stbufline = malloc (term.col + 2); // ACMPL_ISSUE: check for allocating error ...
 
+		tmpfd = mkstemp(tmpfname);
+		
 		int cxp = 0;
 
 		int y, stop;
 
-		if IS_SET(MODE_ALTSCREEN) {
-			y = term.top;
-			stop = term.row;
-		} else {
-			y = TSCREEN.cur + term.top;
-			stop = y + term.row;
+		y = 0;
+		stop = term.row;
+
+		Glyph *bp, *end;
+		Rune r;
+		char buf[UTF_SIZ];
+		int lastpos, n, newline;
+
+		for (; y < stop; y++) {
+			// remember that the type of bp is glyph
+			bp = TLINE(y); 
+			lastpos = MIN(hlinehistlen(TLINEOFFSET(y)) + 1, term.col) - 1;
+			if (lastpos < 0)
+				break;
+			end = &bp[lastpos];
+			for (; bp <= end; ++bp) {
+				r = bp->u;
+				if (r != 0) // Don't write null characters into the stream
+				  if (xwrite(tmpfd, buf, utf8encode(bp->u, buf)) < 0)
+				  	break;
+			}
+			if ((newline = TLINE(y)[lastpos].mode & ATTR_WRAP))
+				continue;
+			if (xwrite(tmpfd, "\n", 1) < 0)
+				break;
+			newline = 0;
 		}
 
-		for (; y < stop; y++)
-		{
-			if (y == term.c.y) cx += cxp * term.col;
+		if (newline)
+			(void)xwrite(tmpfd, "\n", 1);
 
-			size_t x = 0;
-			for (; x < term.col; x++)
-				utf8encode (HLINE(y)[x].u, stbufline + x);
-			if (HLINE(y)[x - 1].mode & ATTR_WRAP)
-			{
-				x--;
-				if (y <= term.c.y) cy--;
-				cxp++;
-			}
-			else
-			{
-				stbufline [x] = '\n';
-				cxp = 0;
-			}
-			stbufline [x + 1] = 0;
-			fputs (stbufline, stbuf);
-		}
+		close(tmpfd);
 
-		free (stbufline);
-		fclose (stbuf);
+
+		// for (; y < stop; y++)
+		// {
+		// 	if (y == term.c.y) cx += cxp * term.col;
+
+		// 	size_t x = 0;
+		// 	for (; x < term.col; x++)
+		// 		utf8encode (TLINE(y)[x].u, stbufline + x);
+		// 	if (TLINE(y)[x - 1].mode & ATTR_WRAP)
+		// 	{
+		// 		x--;
+		// 		if (y <= term.c.y) cy--;
+		// 		cxp++;
+		// 	}
+		// 	else
+		// 	{
+		// 		stbufline [x] = '\n';
+		// 		cxp = 0;
+		// 	}
+		// 	stbufline [x + 1] = 0;
+		// 	fputs (stbufline, stbuf);
+		// }
+
+		// free (stbufline);
+		// fclose (stbuf);
 
 		
 acmpl_begin:
@@ -3045,7 +3077,7 @@ acmpl_begin:
 		sprintf (
 			acmpl,
 			"cat %100s | /home/vector/st/st-autocomplete %500s %d %d",	// ACMPL_ISSUE: why 100 and 500?
-			stbuffile,
+			tmpfname,
 			acmpl_cmd [acmpl_cmdindex],
 			cy,
 			cx
@@ -3057,6 +3089,7 @@ acmpl_begin:
 //     Read the target, targetlen
 
 		fscanf (acmpl_exec, "%500s\n", target); // ACMPL_ISSUE: check for scanning error ...
+		remove(tmpfname);
 		targetlen = strlen (target);
 	}
 
@@ -3067,6 +3100,7 @@ acmpl_begin:
 	acmpl_status = fscanf (acmpl_exec, "%500[^\n]\n%u\n%u\n%u\n", completion, & line, & beg, & end);
 												// ACMPL_ISSUE: why 500? use term.col instead
 
+	// printf("target: %s\ncompletion: %s\nline: %d\nbeg: %d\nend: %d\n", target, completion, line, beg, end);
 // Exit if no completions found
 
 	if (active == 0 && acmpl_status == EOF)
@@ -3075,7 +3109,8 @@ acmpl_begin:
 //    Close st-autocomplete and exit without activating the autocomplete mode
 
 		pclose (acmpl_exec);
-		remove (stbuffile);
+		close(tmpfd);
+		remove(tmpfname);
 		return;
 	}
 
@@ -3118,7 +3153,7 @@ acmpl_begin:
 	int tl = line;
 
 	for (int l = 0; l < tl; l++)
-		if (HLINE(l)[term.col - 1].mode & ATTR_WRAP)
+		if (TLINE(l)[term.col - 1].mode & ATTR_WRAP)
 		{
 			wl++;
 			tl++;
