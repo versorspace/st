@@ -24,11 +24,18 @@ my $lines1 = [];
 my $last_line = -1;
 my $lines_before_cursor = 0;
 
+# the following two  lines were added by be to see file contents in /tmp/test
+my $file = '/tmp/test';
+open my $fh, '>', $file or die $!;
+
 while (<stdin>)
 {
+	# the following two  lines were added by be to see file contents in /tmp/test
+	last if /^$/;
+
 	$last_line++;
 
-	s/[^[:print:]]/?/g;
+	# s/[^[:print:]]/?/g;
 
 	if ($last_line < $cursor_row)
 	{
@@ -40,10 +47,16 @@ while (<stdin>)
 		unshift @{$lines}, $_;
 	}
 }
+# this line too
 
 foreach (@{$lines1})
 {
 	unshift @{$lines}, $_;
+}
+
+foreach (@{$lines})
+{
+	print $fh $_;
 }
 
 my $cursor_row_in = $cursor_row;
@@ -128,7 +141,8 @@ if ($cmd eq 'word-complete') {
 	# and parenthesis.
 	$char_class_before      = '((?<q>["\'`])|(?<b>\[)|(?<p>\())';
 
-	$matcher                = generate_matcher('.*?');
+	# $matcher                = generate_matcher('.*?');
+	$matcher                = generate_matcher('.*');
 
 	# Here we match text till enclosing pair, using perl conditionals in
 	# regexps (?(condition)yes-expression|no-expression).
@@ -157,6 +171,11 @@ if ($word_to_complete) {
 									$char_class_before,
 									$char_class_at_end);
 		if ($completion) {
+
+			if ($cmd eq 'surround-complete') {
+				$completion = "'$completion'";
+			}
+
 			print stdout $completion."\n".join ("\n", @{$self->{highlight}})."\n";
 		}
 		else {
@@ -197,8 +216,15 @@ sub highlight_match {
 sub read_word_at_coord {
     my ($self, $row, $col, $char_class) = @_;
 
+    print $fh "self: $self\n";
+    print $fh "row: $row\n";
+    print $fh "col: $col\n";
+    print $fh "char_class $char_class\n";
+
     $_ = substr(@{$lines} [$row], 0, $col); # get the current line up to the cursor...
+    print $fh "$_\n";
     s/.*?($char_class*)$/$1/;               # ...and read the last word from it
+    print $fh "$_\n";
     return $_;
 }
 
@@ -308,3 +334,5 @@ sub find_match {
 
     return undef;
 }
+
+close $fh;
