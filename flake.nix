@@ -1,35 +1,48 @@
 {
-  description = "st terminal";
+  description = "st: Suckless Terminal";
 
-  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  outputs = { self, nixpkgs }:
+  let
+    pkgs = nixpkgs.legacyPackages.x86_64-linux;
+  in
+  {
+    packages.x86_64-linux.st = pkgs.callPackage (
+      { lib, stdenv, fetchurl, libX11, libXft, fontconfig, freetype,
+        harfbuzz, gd, glib, ncurses, pkg-config
+      }:
+        stdenv.mkDerivation rec {
+          pname = "st";
+          version = "0.9";
+        
+          src = ./.;
+        
+          buildInputs = [ libX11 libXft harfbuzz gd glib ncurses
+	                  fontconfig freetype pkg-config ];
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let pkgs = nixpkgs.legacyPackages.${system};
-      in rec {
-        packages = flake-utils.lib.flattenTree {
-          st = pkgs.callPackage ./default.nix { };
-        };
-        defaultPackage = packages.st;
-        apps.st = flake-utils.lib.mkApp {
-          drv = packages.st;
-          exePath = "/bin/st";
-        };
-        apps.default = apps.st;
-        defaultApp = apps.st;
-        devShell = pkgs.mkShell rec {
-          name = "st";
-          packages = with pkgs; [
-            pkgconfig
-            xorg.libX11
-            xorg.libXft
-            fontconfig
-            harfbuzz
-            gd
-            glib
-          ];
-        };
+          preInstall = ''
+            export TERMINFO=$out/share/terminfo
+          '';
 
-      });
+          makeFlags = [ "CC=${stdenv.cc.targetPrefix}cc" ];
+
+	  installFlags = [ "PREFIX=$(out)" ];
+	}
+      ) {};
+
+    packages.x86_64-linux.default = self.packages.x86_64-linux.st;
+
+    devShells.x86_64-linux.default = pkgs.mkShell {
+      packages = with pkgs; [
+        xorg.libX11
+	xorg.libXft
+	fontconfig
+	freetype
+	pkg-config
+	harfbuzz
+	gd
+	glib
+	ncurses
+      ];
+    };
+  };
 }
