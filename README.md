@@ -11,4 +11,5 @@ Uses st 0.9: https://dl.suckless.org/st/st-0.9.tar.gz
 
 ## Credits
 Based on Aurélien APTEL <aurelien dot aptel at gmail dot com> bt source code.
-autocomplete: https://gitlab.com/GasparVardanyan/st-autocomplete/-/tree/master/st-autocomplete
+
+All patches were taken from suckless website.
