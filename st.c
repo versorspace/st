@@ -1869,7 +1869,8 @@ csihandle(void)
 			tclearregion(0, term.c.y, term.c.x, term.c.y);
 			break;
 		case 2: /* all */
-			tclearregion(0, 0, term.col-1, term.row-1);
+			// Using -1 here because I have a multiline prompt
+			tscrollup(0, term.ocy - 1);
 			break;
 		default:
 			goto unknown;
