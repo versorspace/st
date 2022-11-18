@@ -1870,7 +1870,8 @@ csihandle(void)
 			break;
 		case 2: /* all */
 			// Using -1 here because I have a multiline prompt
-			tscrollup(0, term.ocy - 1);
+			if (IS_SET(MODE_ALTSCREEN) == 0)
+				tscrollup(0, term.ocy - 1);
 			break;
 		default:
 			goto unknown;
