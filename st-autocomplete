@@ -21,39 +21,50 @@ my ($cmd, $cursor_row, $cursor_column) = @ARGV;
 my $lines = [];
 my $lines1 = [];
 
-my $last_line = -1;
+# my $last_line = -1;
+my $line_count = -1;
 my $lines_before_cursor = 0;
 
-# the following two  lines were added by be to see file contents in /tmp/test
+# Following 2 lines: Opening /tmp/test to save stdin
 my $file = '/tmp/test';
 open my $fh, '>', $file or die $!;
 
 while (<stdin>)
 {
-	# the following two  lines were added by be to see file contents in /tmp/test
-	last if /^$/;
+    # # Exit the loop in the first blank line
+    # last if /^$/;
 
-	$last_line++;
+	# $last_line++;
+	$line_count++;
 
+    # Commented out the line below it substitutes CJK characters with ?
 	# s/[^[:print:]]/?/g;
 
-	if ($last_line < $cursor_row)
+	if ($line_count < $cursor_row)
 	{
+        # Place lines before cursor row into $lines1 list
 		unshift @{$lines1}, $_;
 		$lines_before_cursor++;
 	}
 	else
 	{
+        # Places lines after cursor row into ${lines}
 		unshift @{$lines}, $_;
 	}
-}
-# this line too
 
+}
+
+# lines1 contains all lines received through upto the cursor row in reverse order
+# lines contains all lines below cursor in reverse order
+
+# Every line above the cursor inserted into lines list in the correct order into $lines
+# The line with the cursor therefore becomes the last line
 foreach (@{$lines1})
 {
 	unshift @{$lines}, $_;
 }
 
+# Getting the result of above stuff into /tmp/test
 foreach (@{$lines})
 {
 	print $fh $_;
@@ -61,7 +72,8 @@ foreach (@{$lines})
 
 my $cursor_row_in = $cursor_row;
 
-$cursor_row = $last_line;
+# $cursor_row = $last_line;
+$cursor_row = $line_count;
 
 
 $self = {};
@@ -201,7 +213,7 @@ sub highlight_match {
 
 	if ($linenum >= $lines_before_cursor)
 	{
-		$lline = $last_line - $lines_before_cursor;
+		$lline = $line_count - $lines_before_cursor;
 		$linenum -= $lines_before_cursor;
 		$linenum = $lline - $linenum;
 		$linenum += $lines_before_cursor;
@@ -216,7 +228,8 @@ sub highlight_match {
 sub read_word_at_coord {
     my ($self, $row, $col, $char_class) = @_;
 
-    print $fh "self: $self\n";
+    print $fh "cursor_row: $cursor_row + 1\n";
+    print $fh "cursor_row_in: $cursor_row_in\n";
     print $fh "row: $row\n";
     print $fh "col: $col\n";
     print $fh "char_class $char_class\n";
