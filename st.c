@@ -2923,7 +2923,7 @@ void autocomplete (const Arg * arg)
 	static char completion [1000] = {0};		// ACMPL_ISSUE: why 1000? dynamically allocate char array of size term.col
 	static size_t complen_prev = 0;		// NOTE: always clear this variable after clearing completion
 
-	static int cx, cy;
+	static int cx, cy, wraps_bf_cy;
 
 	// ACMPL_ISSUE: crashes when term.row is too small
 
@@ -3021,6 +3021,7 @@ void autocomplete (const Arg * arg)
 		char buf[UTF_SIZ];
 		int lastpos, n, newline;
 
+        wraps_bf_cy = 0;
 		for (; y < stop; y++) {
 			// remember that the type of bp is glyph
 			bp = TLINE(y); 
@@ -3034,8 +3035,11 @@ void autocomplete (const Arg * arg)
 				  if (xwrite(tmpfd, buf, utf8encode(bp->u, buf)) < 0)
 				  	break;
 			}
-			if ((newline = TLINE(y)[lastpos].mode & ATTR_WRAP))
+			if ((newline = TLINE(y)[lastpos].mode & ATTR_WRAP)) {
+                if (y < cy)
+                    wraps_bf_cy += 1;
 				continue;
+            }
 			if (xwrite(tmpfd, "\n", 1) < 0)
 				break;
 			newline = 0;
@@ -3082,7 +3086,7 @@ acmpl_begin:
 			"cat %100s | /home/vector/st/st-autocomplete %500s %d %d",	// ACMPL_ISSUE: why 100 and 500?
 			tmpfname,
 			acmpl_cmd [acmpl_cmdindex],
-			cy,
+			cy - wraps_bf_cy,
 			cx
 		);
 
@@ -3161,6 +3165,7 @@ acmpl_begin:
 			wl++;
 			tl++;
 		}
+
 
 // Autcomplete
 
