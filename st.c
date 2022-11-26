@@ -1869,9 +1869,10 @@ csihandle(void)
 			tclearregion(0, term.c.y, term.c.x, term.c.y);
 			break;
 		case 2: /* all */
-			// Using -1 here because I have a multiline prompt
 			if (IS_SET(MODE_ALTSCREEN) == 0)
-				tscrollup(0, term.ocy - 1);
+				tscrollup(0, term.ocy + 1);
+			else
+				tclearregion(0, 0, term.col-1, term.row-1);
 			break;
 		default:
 			goto unknown;
