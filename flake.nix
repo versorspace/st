@@ -11,7 +11,7 @@
         harfbuzz, gd, glib, ncurses, pkg-config
       }:
         stdenv.mkDerivation rec {
-          pname = "st";
+          pname = "suckless-terminal";
           version = "0.9";
         
           src = ./.;
